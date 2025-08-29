@@ -168,11 +168,9 @@ async def main():
     async def on_ready():
         print(f'機器人 {client.user} 已臨時登入。')
         
-        # 1. 獲取現有資料
         all_codes = get_current_codes_from_worker()
         original_codes_count = len(all_codes)
 
-        # 2. 獲取頻道並讀取最新 10 條訊息
         channel = client.get_channel(TARGET_CHANNEL_ID)
         if not channel:
             print(f"錯誤：找不到頻道 ID {TARGET_CHANNEL_ID}。")
@@ -183,20 +181,30 @@ async def main():
         async for message in channel.history(limit=10):
             new_data = parse_message_for_codes(message.content)
             if new_data:
-                all_codes.update(new_data) # 新資料會覆蓋舊資料
+                all_codes.update(new_data)
 
-        # 3. 檢查是否有變動，如有則上傳
         if len(all_codes) > original_codes_count:
             print(f"發現新資料！總數從 {original_codes_count} 變為 {len(all_codes)}。正在上傳...")
             upload_via_worker(all_codes)
         else:
             print("未發現新資料，無需更新。")
 
-        # 4. 任務完成，登出
         await client.close()
         print("任務完成，機器人已登出。")
 
-    await client.start(DISCORD_TOKEN)
+    # <<<--- 核心修改點 ---
+    try:
+        # 用 asyncio.wait_for 包裹 client.start()，並設定 60 秒的超時
+        print("正在嘗試連接到 Discord... (60秒超時)")
+        await asyncio.wait_for(client.start(DISCORD_TOKEN), timeout=60.0)
+    except asyncio.TimeoutError:
+        print("錯誤：連接 Discord 超時 (超過 60 秒)。可能是 GitHub Actions 的網路問題。")
+        # 即使超時，也確保客戶端被正確關閉
+        await client.close()
+    except Exception as e:
+        print(f"運行時發生未預期的錯誤: {e}")
+        await client.close()
+    # <<<--------------------
 
 # 運行主函式
 if __name__ == "__main__":
