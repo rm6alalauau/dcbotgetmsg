@@ -4,7 +4,7 @@ name: Sync Discord Codes
 on:
   # 1. 定時觸發：使用 CRON 語法，"*/15 * * * *" 代表每 15 分鐘運行一次
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/60 * * * *'
   
   # 2. 手動觸發：允許您在 GitHub Actions 頁面手動點擊按鈕來運行
   workflow_dispatch:
