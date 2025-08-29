@@ -1,0 +1,43 @@
+name: Sync Discord Codes
+
+# 工作流程的觸發器
+on:
+  # 1. 定時觸發：使用 CRON 語法，"*/15 * * * *" 代表每 15 分鐘運行一次
+  schedule:
+    - cron: '*/15 * * * *'
+  
+  # 2. 手動觸發：允許您在 GitHub Actions 頁面手動點擊按鈕來運行
+  workflow_dispatch:
+
+# 定義工作
+jobs:
+  sync:
+    # 使用最新的 Ubuntu 虛擬環境
+    runs-on: ubuntu-latest
+    
+    # 定義工作步驟
+    steps:
+      # 步驟 1: 將您的 Repository 程式碼 checkout 到虛擬環境中
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步驟 2: 設定 Python 環境
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # 指定 Python 版本
+
+      # 步驟 3: 安裝 Python 依賴套件
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      # 步驟 4: 運行您的 Python 腳本
+      - name: Run sync script
+        # 將 GitHub Secrets 注入到環境變數中，讓 Python 腳本可以讀取
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          WORKER_UPLOAD_URL: ${{ secrets.WORKER_UPLOAD_URL }}
+          WORKER_SECRET_KEY: ${{ secrets.WORKER_SECRET_KEY }}
+        run: python main.py
